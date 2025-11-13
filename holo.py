@@ -9,7 +9,7 @@ from collections import deque
 import json
 from datetime import datetime
 
-class IronManHologramController:
+class HologramController:
     def __init__(self):
         # MediaPipe with HIGH accuracy
         self.mp_hands = mp.solutions.hands
@@ -543,19 +543,32 @@ class IronManHologramController:
                 gesture = 'hologram_zoom'
                 return gesture, None
             
-            # Single hand gestures
+            # Single hand gestures - PRIORITY ORDER MATTERS!
+            # Check pinch first (most specific)
             if self.detect_pinch(lm_list):
                 gesture = 'hologram_pinch'
                 pos = lm_list[8]
-            elif self.detect_open_palm(fingers):
-                gesture = 'hologram_rotate'
-                pos = lm_list[8]
+            # Check if ONLY index finger is up (for dragging)
             elif finger_count == 1 and fingers[1] == 1:
                 gesture = 'hologram_drag'
                 pos = lm_list[8]
+            # Check open palm (all 5 fingers for rotation)
+            elif self.detect_open_palm(fingers):
+                gesture = 'hologram_rotate'
+                pos = lm_list[8]
+            # Check 2 fingers (peace sign - can also drag)
+            elif finger_count == 2 and fingers[1] == 1 and fingers[2] == 1:
+                gesture = 'hologram_drag'
+                pos = lm_list[8]
+            # Fallback to tracking
             else:
                 gesture = 'hologram_tracking'
                 pos = lm_list[8]
+            
+            # Debug print to see what's detected
+            if gesture != 'hologram_tracking':
+                print(f"🎯 Gesture: {gesture}, Fingers: {finger_count}, Pos: {pos}")
+            
             return gesture, pos
         
         # NORMAL MODE GESTURES (original)
@@ -1107,7 +1120,5 @@ class IronManHologramController:
         print("\n✅ Session Ended!\n")
 
 if __name__ == "__main__":
-    controller = IronManHologramController()
+    controller = HologramController()
     controller.run()
-
-    
