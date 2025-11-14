@@ -7,7 +7,7 @@ An advanced gesture-controlled hologram interface inspired by Tony Stark's lab, 
 ![MediaPipe](https://img.shields.io/badge/MediaPipe-0.10+-orange.svg)
 ![License](https://img.shields.io/badge/License-MIT-yellow.svg)
 
-## 🎯 Problem Statement
+## 🎯 Problem
 
 Traditional CAD software and 3D modeling tools require extensive mouse/keyboard interaction, creating barriers in:
 - **EdTech**: Students struggle to engage with 3D geometry concepts
