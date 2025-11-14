@@ -50,21 +50,17 @@ This project solves these challenges by enabling natural, gesture-based interact
 
 ## 📦 Installation
 ```bash
-# Clone the repository
-git clone https://github.com/yourusername/hologram-controller.git
-cd hologram-controller
-
 # Install dependencies
 pip install opencv-python mediapipe pyautogui numpy
 
 # Run the application
-python hologram_controller.py
+python app.py
 ```
 
 ## 🎬 Usage
 
 ### Quick Start
-1. Run `python hologram_controller.py`
+1. Run `python app.py`
 2. Press **H** to enter Hologram Mode
 3. Use gestures to interact with 3D objects
 
