@@ -11,7 +11,7 @@ from datetime import datetime
 
 class HologramController:
     def __init__(self):
-        # MediaPipe with HIGH accuracy
+        # MediaPipe 
         self.mp_hands = mp.solutions.hands
         self.hands = self.mp_hands.Hands(
             static_image_mode=False,
@@ -36,7 +36,6 @@ class HologramController:
         self.click_cooldown = 0
         self.cursor_speed = 3.2
         
-        # Modes
         self.current_mode = 'normal'
         self.drag_active = False
         
@@ -46,11 +45,9 @@ class HologramController:
         self.drawing_thickness = 3
         self.drawing_points = []
         
-        # Gaming mode
         self.gaming_keys = {'up': 'w', 'down': 's', 'left': 'a', 'right': 'd'}
         
-        # HOLOGRAM MODE - IRON MAN STYLE! 🦾
-        self.available_objects = {
+        self.available_objects = { 
             'cube': self.generate_cube(),
             'sphere': self.generate_sphere(),
             'pyramid': self.generate_pyramid(),
@@ -61,7 +58,6 @@ class HologramController:
             'star': self.generate_star()
         }
         
-        # MULTIPLE SPAWNED OBJECTS!
         self.spawned_objects = []  # List of {obj, rotation, position, scale, id, selected}
         self.next_object_id = 0
         
@@ -71,7 +67,6 @@ class HologramController:
         self.menu_items = []
         self.init_menu()
         
-        # DELETE ZONE (Trash bin area)
         self.delete_zone = {
             'x': self.cam_width - 100,
             'y': 50,
@@ -79,18 +74,15 @@ class HologramController:
             'active': False
         }
         
-        # Colors
         self.hologram_color = (0, 200, 255)  # Cyan
         self.glow_color = (100, 230, 255)
         self.selected_color = (0, 255, 100)  # Green when selected
         self.delete_color = (0, 0, 255)  # Red for delete zone
         
-        # Zoom & Gestures
         self.pinch_threshold = 35
         self.two_hand_prev_distance = None
         self.zoom_cooldown = 0
         
-        # Stats & Analytics
         self.total_gestures = 0
         self.gesture_counts = {}
         self.session_start = time.time()
@@ -106,7 +98,6 @@ class HologramController:
     def init_drawing_canvas(self):
         self.drawing_canvas = np.zeros((self.cam_height, self.cam_width, 3), dtype=np.uint8)
     
-    # ============ 3D OBJECT GENERATORS ============
     def generate_cube(self):
         size = 1
         vertices = [
@@ -182,7 +173,7 @@ class HologramController:
             edges.extend([(bottom, top), (bottom, next_bottom), (top, next_top)])
         
         return {'vertices': vertices, 'edges': edges, 'name': 'CYLINDER'}
-    
+
     def generate_diamond(self):
         vertices = [
             [0, 1.5, 0],  # Top
@@ -293,10 +284,8 @@ class HologramController:
         vertices, edges = obj['vertices'], obj['edges']
         projected = [self.project_3d_to_2d(v, rotation, position, scale) for v in vertices]
         
-        # Choose color based on selection
         color = self.selected_color if is_selected else self.hologram_color
         
-        # Draw edges with glow effect
         for edge in edges:
             p1_idx, p2_idx = edge
             if p1_idx < len(projected) and p2_idx < len(projected):
@@ -309,12 +298,10 @@ class HologramController:
                     # Main line
                     cv2.line(frame, (p1[0], p1[1]), (p2[0], p2[1]), color, 2)
         
-        # Draw vertices
         for proj in projected:
             if 0 <= proj[0] < self.cam_width and 0 <= proj[1] < self.cam_height:
                 cv2.circle(frame, (proj[0], proj[1]), 4, self.glow_color, -1)
         
-        # Draw bounding box if selected
         if is_selected:
             xs = [p[0] for p in projected if 0 <= p[0] < self.cam_width]
             ys = [p[1] for p in projected if 0 <= p[1] < self.cam_height]
@@ -325,28 +312,23 @@ class HologramController:
                             self.selected_color, 2)
     
     def draw_menu(self, frame):
-        # Semi-transparent menu background
         menu_bg = frame.copy()
         cv2.rectangle(menu_bg, (0, 0), (220, self.cam_height), (20, 20, 30), -1)
         cv2.addWeighted(menu_bg, 0.7, frame, 0.3, 0, frame)
         
-        # Menu title
         cv2.putText(frame, "3D MODELS", (20, 40), 
                    cv2.FONT_HERSHEY_DUPLEX, 0.8, self.hologram_color, 2)
         cv2.line(frame, (20, 50), (200, 50), self.hologram_color, 2)
         
-        # Draw menu items
         for item in self.menu_items:
             pos, size = item['position'], item['size']
             
             color = self.hologram_color if item['selected'] else (0, 100, 150)
             thickness = 3 if item['selected'] else 2
             
-            # Item box
             cv2.rectangle(frame, (pos[0] - size, pos[1] - size), 
                         (pos[0] + size, pos[1] + size), color, thickness)
             
-            # Mini preview
             mini_rotation = [time.time() * 30 % 360, time.time() * 20 % 360, 0]
             mini_obj_data = {
                 'obj': item['object'],
@@ -357,7 +339,7 @@ class HologramController:
             }
             self.draw_3d_object(frame, mini_obj_data)
             
-            # Name
+        
             cv2.putText(frame, item['name'].upper(), (pos[0] - 35, pos[1] + size + 18), 
                        cv2.FONT_HERSHEY_SIMPLEX, 0.35, self.hologram_color, 1)
     
@@ -371,7 +353,6 @@ class HologramController:
                      (dz['x'] + dz['size']//2, dz['y'] + dz['size']//2),
                      color, 3)
         
-        # Trash can lines
         cv2.line(frame, 
                 (dz['x'] - 20, dz['y'] - 20),
                 (dz['x'] + 20, dz['y'] - 20),
@@ -385,7 +366,6 @@ class HologramController:
             cv2.putText(frame, "DELETE", (dz['x'] - 35, dz['y'] + dz['size']//2 + 20),
                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
     
-    # ============ GESTURE DETECTION ============
     def check_menu_selection(self, hand_pos):
         for item in self.menu_items:
             pos, size = item['position'], item['size']
@@ -395,12 +375,10 @@ class HologramController:
         return None
     
     def check_object_selection(self, hand_pos):
-        # Check which spawned object is being touched
         for obj_data in reversed(self.spawned_objects):  # Check from top (last drawn)
             pos = obj_data['position']
             scale = obj_data['scale']
             
-            # Simple circular hit detection
             dist = math.sqrt((hand_pos[0] - pos[0])**2 + (hand_pos[1] - pos[1])**2)
             if dist < scale * 1.5:  # Hit zone
                 return obj_data['id']
@@ -412,12 +390,10 @@ class HologramController:
         return dist < dz['size']
     
     def get_two_hand_distance(self, lm_list_1, lm_list_2):
-        # Distance between two index fingers (for zoom gesture)
         p1 = lm_list_1[8]  # Right hand index
         p2 = lm_list_2[8]  # Left hand index
         return math.sqrt((p2[0] - p1[0])**2 + (p2[1] - p1[1])**2)
     
-    # ============ ORIGINAL GESTURE FUNCTIONS ============
     def save_stats(self):
         stats = {
             'session_date': datetime.now().isoformat(),
@@ -443,13 +419,12 @@ class HologramController:
         fingers = []
         tips = [4, 8, 12, 16, 20]
         
-        # Thumb
+    
         if lm_list[tips[0]][0] < lm_list[tips[0] - 1][0]:
             fingers.append(1)
         else:
             fingers.append(0)
         
-        # Other fingers
         for id in range(1, 5):
             if lm_list[tips[id]][1] < lm_list[tips[id] - 2][1]:
                 fingers.append(1)
@@ -522,8 +497,6 @@ class HologramController:
         self.drawing_points.append(pos)
     
     def detect_gesture_advanced(self, lm_lists, all_fingers):
-        # lm_lists is a list of landmark lists (for multiple hands)
-        # all_fingers is a list of finger counts for each hand
         
         if len(lm_lists) == 0:
             return 'none', None
@@ -536,42 +509,33 @@ class HologramController:
         gesture = 'none'
         pos = None
         
-        # HOLOGRAM MODE GESTURES
         if self.current_mode == 'hologram':
-            # TWO HAND ZOOM GESTURE
             if len(lm_lists) == 2:
                 gesture = 'hologram_zoom'
                 return gesture, None
             
-            # Single hand gestures - PRIORITY ORDER MATTERS!
-            # Check pinch first (most specific)
             if self.detect_pinch(lm_list):
                 gesture = 'hologram_pinch'
                 pos = lm_list[8]
-            # Check if ONLY index finger is up (for dragging)
             elif finger_count == 1 and fingers[1] == 1:
                 gesture = 'hologram_drag'
                 pos = lm_list[8]
-            # Check open palm (all 5 fingers for rotation)
             elif self.detect_open_palm(fingers):
                 gesture = 'hologram_rotate'
                 pos = lm_list[8]
-            # Check 2 fingers (peace sign - can also drag)
             elif finger_count == 2 and fingers[1] == 1 and fingers[2] == 1:
                 gesture = 'hologram_drag'
                 pos = lm_list[8]
-            # Fallback to tracking
             else:
                 gesture = 'hologram_tracking'
                 pos = lm_list[8]
             
-            # Debug print to see what's detected
             if gesture != 'hologram_tracking':
                 print(f"🎯 Gesture: {gesture}, Fingers: {finger_count}, Pos: {pos}")
             
             return gesture, pos
         
-        # NORMAL MODE GESTURES (original)
+        # GESTURES
         if finger_count == 0:
             gesture = 'double_click'
         elif finger_count == 1 and fingers[1] == 1:
@@ -652,20 +616,17 @@ class HologramController:
 
         # ========== HOLOGRAM GESTURES ==========
         if gesture == 'hologram_zoom' and len(lm_lists) == 2:
-            # TWO HAND ZOOM!
             current_distance = self.get_two_hand_distance(lm_lists[0], lm_lists[1])
 
             if self.two_hand_prev_distance is not None and t - self.zoom_cooldown > 0.05:
                 delta = current_distance - self.two_hand_prev_distance
 
-                # Zoom selected object or all objects
                 if self.selected_object_id is not None:
                     for obj_data in self.spawned_objects:
                         if obj_data['id'] == self.selected_object_id:
                             obj_data['scale'] = max(20, min(200, obj_data['scale'] + delta * 0.5))
                             break
                 else:
-                    # Zoom all objects
                     for obj_data in self.spawned_objects:
                         obj_data['scale'] = max(20, min(200, obj_data['scale'] + delta * 0.3))
 
@@ -677,10 +638,9 @@ class HologramController:
             self.two_hand_prev_distance = None
 
         if gesture == 'hologram_pinch' and pos:
-            # SELECT FROM MENU OR SELECT SPAWNED OBJECT
+
             menu_item = self.check_menu_selection(pos)
             if menu_item:
-                # Spawn new object!
                 for item in self.menu_items:
                     item['selected'] = False
                 menu_item['selected'] = True
@@ -700,10 +660,8 @@ class HologramController:
                 print(f"✨ Spawned: {menu_item['name'].upper()} (ID: {new_obj['id']})")
                 return
 
-            # Select existing object
             obj_id = self.check_object_selection(pos)
             if obj_id is not None:
-                # Deselect all, select this one
                 for obj_data in self.spawned_objects:
                     obj_data['selected'] = (obj_data['id'] == obj_id)
                 self.selected_object_id = obj_id
@@ -711,12 +669,11 @@ class HologramController:
                 return
         
         if gesture == 'hologram_drag' and pos:
-            # DRAG SELECTED OBJECT
             if self.selected_object_id is not None:
                 # Check if in delete zone
                 if self.check_delete_zone(pos):
                     self.delete_zone['active'] = True
-                    # Delete object
+                   
                     self.spawned_objects = [obj for obj in self.spawned_objects 
                                            if obj['id'] != self.selected_object_id]
                     self.log_gesture('hologram_delete')
@@ -727,14 +684,14 @@ class HologramController:
                 
                 self.delete_zone['active'] = False
                 
-                # Move object
+
                 for obj_data in self.spawned_objects:
                     if obj_data['id'] == self.selected_object_id:
                         obj_data['position'][0] = pos[0]
                         obj_data['position'][1] = pos[1]
                         break
             else:
-                # If no object selected, try to select one
+
                 obj_id = self.check_object_selection(pos)
                 if obj_id is not None:
                     for obj_data in self.spawned_objects:
@@ -743,7 +700,7 @@ class HologramController:
             return
         
         if gesture == 'hologram_rotate' and pos:
-            # ROTATE SELECTED OBJECT (or all if none selected)
+          
             if self.prev_hand_pos:
                 delta_x = pos[0] - self.prev_hand_pos[0]
                 delta_y = pos[1] - self.prev_hand_pos[1]
@@ -755,13 +712,12 @@ class HologramController:
                             obj_data['rotation'][0] += delta_y * 0.7
                             break
                 else:
-                    # Rotate all objects
                     for obj_data in self.spawned_objects:
                         obj_data['rotation'][1] += delta_x * 0.5
                         obj_data['rotation'][0] += delta_y * 0.5
             return
         
-        # ========== ORIGINAL GESTURES ==========
+        # ========== GESTURES ==========
         if gesture == 'cursor' and pos:
             self.move_cursor(pos[0], pos[1])
         elif gesture == 'draw' and pos:
@@ -900,11 +856,10 @@ class HologramController:
         h, w = frame.shape[:2]
         
         if self.current_mode == 'hologram':
-            # IRON MAN STYLE SCANLINES
+            #SCANLINES
             for i in range(0, h, 3):
                 cv2.line(frame, (0, i), (w, i), (0, 30, 60), 1)
             
-            # Corner brackets (HUD style)
             corner_size = 30
             corner_color = self.hologram_color
             # Top-left
