@@ -1,4 +1,4 @@
-# 🦾 Gesture Controlled Curson and Hologram
+# 🦾 Gesture Controlled Cursor and Hologram
 
 An advanced gesture-controlled hologram interface inspired by Tony Stark's lab, enabling touchless 3D object manipulation using hand tracking.
 
