@@ -1,0 +1,17 @@
+# Core Libraries
+opencv-python==4.11.0.86
+mediapipe==0.10.21
+numpy==1.26.4
+pyautogui==0.9.54
+
+# Computer Vision
+opencv-contrib-python==4.11.0.86
+
+# System Interaction
+PyAutoGUI==0.9.54
+pyobjc-core==12.0
+pyobjc-framework-Quartz==12.0
+pyobjc-framework-Cocoa==12.0
+
+# Utilities
+Pillow==12.0.0
